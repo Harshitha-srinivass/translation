@@ -39,11 +39,7 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_PRIVATE_KEY }}
         script: |
-      sudo apt update
-      sudo apt install -y docker.io || true
-      sudo systemctl start docker
-      sudo systemctl enable docker
-      docker pull your-docker-repo/flask-app:latest
-      docker stop flask-app || true
-      docker rm flask-app || true
-      docker run -d -p 80:5000 --name flask-app your-docker-repo/flask-app:latest
+          docker pull ${{ secrets.DOCKER_USERNAME }}/flask-app:latest
+          docker stop flask-app || true
+          docker rm flask-app || true
+          docker run -d -p 80:5000 --name flask-app ${{ secrets.DOCKER_USERNAME }}/flask-app:latest
