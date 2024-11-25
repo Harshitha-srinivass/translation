@@ -1,76 +1,35 @@
-from flask import Flask,request,render_template
-from datetime import date
-import requests
-import json
+from flask import Flask, render_template, request,make_response
+import googletrans
+from googletrans import Translator
+import gtts
+from gtts import gTTS
+import time
+from IPython.display import Audio
 
-global apikey,host
-
-apikey = "872c49dc05msh8d86a66770768c8p1b93cbjsne3983dfbc365"
-host = "google-translate1.p.rapidapi.com"
-
-def list_all_languages():
-    url = "https://google-translate1.p.rapidapi.com/language/translate/v2/languages"
-    headers = {
-        "Accept-Encoding": "application/gzip",
-        "X-RapidAPI-Key": apikey,
-        "X-RapidAPI-Host": host
-    }
-    response = requests.request("GET", url, headers=headers)
-    return response.text
-
-def detect_language(text):
-    url = "https://google-translate1.p.rapidapi.com/language/translate/v2/detect"
-    text = text.replace(' ','%20')
-    payload = f"q={text}"
-    headers = {
-        "content-type": "application/x-www-form-urlencoded",
-        "Accept-Encoding": "application/gzip",
-        "X-RapidAPI-Key": apikey,
-        "X-RapidAPI-Host": host
-    }
-    response = requests.request("POST", url, data=payload, headers=headers)
-    return response.text
-
-def translatetext(text,l2,l1='en'):
-    url = "https://google-translate1.p.rapidapi.com/language/translate/v2"
-    text = text.replace(' ','%20')
-    payload = f"q={text}&target={l2}&source={l1}"
-    headers = {
-        "content-type": "application/x-www-form-urlencoded",
-        "Accept-Encoding": "application/gzip",
-        "X-RapidAPI-Key": apikey,
-        "X-RapidAPI-Host": host
-    }
-    response = requests.request("POST", url, data=payload, headers=headers)
-    return response.text
-
-
-#### Defining Flask App
 app = Flask(__name__)
+language_codes = googletrans.LANGUAGES
+languages = [{"code": code, "name": name} for code, name in language_codes.items()]
 
+def translate_text(text, target_lang):
+    translator = Translator()
+    translation = translator.translate(text, dest=target_lang)
+    return translation.text
 
-#### Saving Date today in 2 different formats
-datetoday = date.today().strftime("%m_%d_%y")
-datetoday2 = date.today().strftime("%d-%B-%Y")
-
-#### Our main page
-@app.route('/')
-def home():
-    return render_template('home.html',datetoday2=datetoday2,res='')
-
-@app.route('/translate',methods=['POST'])
+@app.route("/", methods=["GET", "POST"])
 def translate():
-    input_text = request.form['sourcetext']
-    targetlang = request.form['languages']
-    input_lang = json.loads(detect_language(input_text))['data']['detections'][0][0]['language']
-    res = translatetext(input_text,targetlang,input_lang)
-    res = json.loads(res)
-    res = res['data']['translations'][0]['translatedText']
-    return render_template('home.html',datetoday2=datetoday2,res=res)
+    if request.method == "POST":
+        input_text = request.form.get("input_text")
+        target_language = request.form.get("target_language")
+        translated_text = translate_text(input_text, target_language)
+        timestamp = int(time.time())
+        filename = f"static/op_{timestamp}.mp3"  
+        tts = gTTS(translated_text, lang=target_language)
+        tts.save(filename)  
+        return render_template("home.html", languages=languages, input_text=input_text, translated_text=translated_text, audio_filename=filename)
+    return render_template("home.html", languages=languages)
 
 
-#### Our main function which runs the Flask App
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
     app.run(debug=True)
-
+    app.run(host='0.0.0.0', port=5000)
