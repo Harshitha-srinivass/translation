@@ -5,7 +5,7 @@ import json
 
 global apikey,host
 
-apikey = "PASTE YOUR API KEY HERE"
+apikey = "872c49dc05msh8d86a66770768c8p1b93cbjsne3983dfbc365"
 host = "google-translate1.p.rapidapi.com"
 
 def list_all_languages():
